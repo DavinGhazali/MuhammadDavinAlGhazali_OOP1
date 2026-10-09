@@ -45,6 +45,7 @@ public class Item extends GameObject {
 
     @Override
     public void update(float delta) {
+        super.update(delta);
         this.y -= speed * delta;
     }
 

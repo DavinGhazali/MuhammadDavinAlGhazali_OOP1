@@ -29,6 +29,7 @@ public class Enemy extends GameObject {
 
     @Override
     public void update(float delta) {
+        super.update(delta);
         if (collisionCooldown > 0) {
             collisionCooldown -= delta;
         }

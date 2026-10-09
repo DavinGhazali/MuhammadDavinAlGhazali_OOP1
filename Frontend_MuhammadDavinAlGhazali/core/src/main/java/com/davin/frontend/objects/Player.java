@@ -3,10 +3,14 @@ package com.davin.frontend.objects;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.davin.frontend.objects.bullets.Bullet;
-import com.davin.frontend.objects.enemies.Enemy;
 import com.davin.frontend.items.Item;
 import com.davin.frontend.items.ItemType;
+import com.davin.frontend.objects.bullets.Bullet;
+import com.davin.frontend.objects.enemies.Enemy;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.davin.frontend.systems.AssetManager;
+import com.davin.frontend.systems.EntityFactory;
 
 public class Player extends GameObject {
     private String name;
@@ -14,9 +18,10 @@ public class Player extends GameObject {
     private int power;
     private int spellCards;
     private long score;
+    private int currentDir = 0;
 
     public Player(String name, int hp, int power, int spellCards) {
-        super(280, 40, 32, 32, 0, Color.RED);
+        super(280, 40, 32, 48, 0, Color.RED);
         this.name = name;
         this.hp = hp;
         this.power = power;
@@ -35,19 +40,42 @@ public class Player extends GameObject {
 
     @Override
     public void update(float delta) {
+        super.update(delta);
+
+        float dx = 0;
         if (Gdx.input != null) {
             if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
-                setY(getY() + getSpeed() * delta);
+              y += speed * delta);
             }
             if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-                setY(getY() - getSpeed() * delta);
+                y -= speed * delta);
             }
             if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-                setX(getX() - getSpeed() * delta);
+                x -= speed * delta);
+                dx -= 1;
             }
             if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-                setX(getX() + getSpeed() * delta);
+                x += speed * delta);
+                dx += 1;
             }
+        }
+
+        updateAnimationState(dx);
+    }
+
+    @Override
+    public void updateAnimationState(float dx) {
+        AssetManager assets = AssetManager.getInstance();
+        if (dx < 0) {
+            if (currentDir != -1){
+                currentDir = 1;
+                Animation<TextureRegion> anim = assets.getAnimation("Player_left");
+                if (anim != null) {
+                    setAnimation(anim);
+                }
+            }
+        } else if (dx > 0) {
+
         }
     }
 
@@ -97,6 +125,7 @@ public class Player extends GameObject {
 
     public void collectItem(Item item) {
         if (item.isDestroyed()) return;
+
         ItemType type = item.getItemTypeEnum();
         if (type != null) {
             switch (type) {
@@ -124,6 +153,7 @@ public class Player extends GameObject {
             addScore(item.getScoreValue());
             System.out.println(name + " collected " + item.getItemType() + "!");
         }
+
         item.destroy();
     }
 
