@@ -3,14 +3,15 @@ package com.davin.frontend.objects;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.davin.frontend.items.Item;
-import com.davin.frontend.items.ItemType;
-import com.davin.frontend.objects.bullets.Bullet;
-import com.davin.frontend.objects.enemies.Enemy;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
+import com.davin.frontend.items.Item;
+import com.davin.frontend.items.ItemType;
+import com.davin.frontend.objects.enemies.Enemy;
+import com.davin.frontend.objects.patterns.ShootingPattern;
 import com.davin.frontend.systems.AssetManager;
-import com.davin.frontend.systems.EntityFactory;
+import com.davin.frontend.systems.BulletManager;
 
 public class Player extends GameObject {
     private String name;
@@ -18,7 +19,9 @@ public class Player extends GameObject {
     private int power;
     private int spellCards;
     private long score;
-    private int currentDir = 0;
+    private int currentDir = 0; // -1 = left, 0 = idle, 1 = right
+
+    private ShootingPattern shootingPattern;
 
     public Player(String name, int hp, int power, int spellCards) {
         super(280, 40, 32, 48, 0, Color.RED);
@@ -30,12 +33,22 @@ public class Player extends GameObject {
     }
 
     public Player(float x, float y, String name, int hp, int power, int spellCards) {
-        super(x, y, 32, 32, 0, Color.RED);
+        super(x, y, 32, 48, 0, Color.RED);
         this.name = name;
         this.hp = hp;
         this.power = power;
         this.spellCards = spellCards;
         this.score = 0;
+    }
+
+    @Override
+    public Rectangle getCoreHitbox() {
+        return new Rectangle(x + (width / 2f) - 4f, y + (height / 2f) - 4f, 8f, 8f);
+    }
+
+    @Override
+    public Rectangle getGrazeHitbox() {
+        return new Rectangle(x, y, width, height);
     }
 
     @Override
@@ -45,17 +58,17 @@ public class Player extends GameObject {
         float dx = 0;
         if (Gdx.input != null) {
             if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
-              y += speed * delta);
+                y += speed * delta;
             }
             if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-                y -= speed * delta);
+                y -= speed * delta;
             }
             if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-                x -= speed * delta);
+                x -= speed * delta;
                 dx -= 1;
             }
             if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-                x += speed * delta);
+                x += speed * delta;
                 dx += 1;
             }
         }
@@ -63,19 +76,32 @@ public class Player extends GameObject {
         updateAnimationState(dx);
     }
 
-    @Override
     public void updateAnimationState(float dx) {
         AssetManager assets = AssetManager.getInstance();
         if (dx < 0) {
-            if (currentDir != -1){
-                currentDir = 1;
-                Animation<TextureRegion> anim = assets.getAnimation("Player_left");
+            if (currentDir != -1) {
+                currentDir = -1;
+                Animation<TextureRegion> anim = assets.getAnimation("player_left");
                 if (anim != null) {
                     setAnimation(anim);
                 }
             }
         } else if (dx > 0) {
-
+            if (currentDir != 1) {
+                currentDir = 1;
+                Animation<TextureRegion> anim = assets.getAnimation("player_right");
+                if (anim != null) {
+                    setAnimation(anim);
+                }
+            }
+        } else {
+            if (currentDir != 0) {
+                currentDir = 0;
+                Animation<TextureRegion> anim = assets.getAnimation("player_idle");
+                if (anim != null) {
+                    setAnimation(anim);
+                }
+            }
         }
     }
 
@@ -106,10 +132,17 @@ public class Player extends GameObject {
         target.takeDamage(damage);
     }
 
-    public Bullet shootBullet() {
-        int damage = 10 + power;
-        System.out.println(name + " shoots bullet dealing " + damage + " DMG!");
-        return new Bullet(x + width / 2 - 4, y + height, BulletType.AMULET, damage);
+    public void shootBullet(BulletManager bulletManager) {
+        if (bulletManager == null) return;
+
+        float muzzleX = x + width / 2f - 8f;
+        float muzzleY = y + height;
+
+        if (shootingPattern != null) {
+            shootingPattern.execute(muzzleX, muzzleY, bulletManager, true);
+        } else {
+            bulletManager.spawnPlayerBullet(muzzleX, muzzleY, 0f, 400f, 10 + power);
+        }
     }
 
     public boolean isAlive() {
@@ -166,4 +199,7 @@ public class Player extends GameObject {
     public int getSpellCards() { return spellCards; }
     public void setSpellCards(int spellCards) { this.spellCards = spellCards; }
     public long getScore() { return score; }
+
+    public ShootingPattern getShootingPattern() { return shootingPattern; }
+    public void setShootingPattern(ShootingPattern shootingPattern) { this.shootingPattern = shootingPattern; }
 }
