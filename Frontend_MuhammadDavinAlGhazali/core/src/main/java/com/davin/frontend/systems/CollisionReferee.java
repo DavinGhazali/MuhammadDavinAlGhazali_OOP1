@@ -1,9 +1,9 @@
 package com.davin.frontend.systems;
 
-import com.davin.frontend.objects.Player;
 import com.davin.frontend.items.Item;
 import com.davin.frontend.items.ItemType;
 import com.davin.frontend.objects.GameObject;
+import com.davin.frontend.objects.Player;
 import com.davin.frontend.objects.bullets.Bullet;
 import com.davin.frontend.objects.enemies.Enemy;
 import java.util.ArrayList;
@@ -16,38 +16,70 @@ public class CollisionReferee {
 
         List<GameObject> newDrops = new ArrayList<>();
 
-        // Collision logic is divided into 3 stages
-        //
-        // 1. Evaluate Player Bullets vs Enemies
-// TODO Code for Question 3:
+        // 1. Player bullets vs enemies
 
-        for(Bullet bullet : BulletManager.getActivePlayerBullet()){
-            if
+
+        // 2. Enemy bullets vs player (core hit vs graze)
+        // 2. Mediator checks Enemy Bullets vs Player (Core Hitbox vs Graze Hitbox)
+        for (Bullet bullet : bulletManager.getActivePlayerBullets()) {
+            if (bullet.isDestroyed()) continue;
+
+            if (!player.isDestroyed()) {
+                if (bullet.getCoreHitbox().overlaps(player.getCoreHitbox())) {
+                    System.out.println("[CollisionReferee] CORE HIT! Enemy Bullet hit" + player.getName() + " for " + bullet.getDamage() + "DMG!");
+                    player.takeDamage(100, bulletManager, entities);
+                    bullet.destroy();
+                    break;
+                }
+            } else if (!bullet.hasBeenGrazed()
+                && bullet.getCoreHitbox().overlaps(player.getGrazeHitbox())) {
+                bullet.setGrazed(true);
+                player.addGraze();
+                System.out.println("graze !" = player.getName()+ "grazed an enemy bullet (+50 pts)!");
+
+                for (GameObject entity : entities) {
+                    if (entity instanceof Enemy && !entity.isDestroyed()) {
+                        Enemy enemy = (Enemy) entity;
+                        if (bullet.getCoreHitbox().overlaps(enemy.getCoreHitbox())) {
+                            boolean defeated = enemy.takeDamage(bullet.getDamage());
+                            if (defeated) {
+                                player.addScore(enemy.getScoreValue());
+                                Item drop = EntityFactory.createItem(enemy.getX(), enemy.getY(), ItemType.POWER);
+                                newDrops.add(drop);
+                            }
+                            bullet.destroy();
+                            break;
+                        }
+                    }
+                }
+            }
+
+
+    // 3. Player vs items and enemy body contact
+        for (GameObject entity : entities) {
+            if (entity.isDestroyed()) continue;
+
+            if (entity instanceof Item) {
+                Item item = (Item) entity;
+                if (item.getCoreHitbox().overlaps(player.getCoreHitbox())
+                    || item.getCoreHitbox().overlaps(player.getGrazeHitbox())) {
+                    player.collectItem(item);
+                }
+            } else if (entity instanceof Enemy) {
+                Enemy enemy = (Enemy) entity;
+                if (player.getCoreHitbox().overlaps(enemy.getCoreHitbox())) {
+
+
+                } if (!player.isInvulnerable()){
+                    System.out.println("[CollisionReferee] Player collided with " enemy.getName() + " ! ");
+
+                }
+
+                    player.takeDamage(100, bulletManager, entities);
+                }
+            }
         }
-// - Loop through each bullet in the ActivePlayerBullets list.
-//   - If the bullet is already destroyed, skip it (continue)
-//
-//   - Loop through each entity in entities: (HINT: the `entities` variable is in the parameters above)
-//     - Check whether entity is an instance of Enemy enemy and is not destroyed yet.
-//     - If so, check whether the bullet's Core Hitbox collides with the enemy's Core Hitbox.
-//     - If they collide:
-//       1. Deal damage to the enemy: boolean defeated = enemy.takeDamage(bullet.getDamage());
-//       2. If the enemy is killed (defeated):
-//          - Add the enemy's score (scoreValue) to the player.
-//          - Create a POWER item drop via the factory at the x, y coordinates where the enemy died,
-//            then add that item to the newDrops list
-//       3. Mark the bullet as destroyed so it will be recycled later by BulletManager
-
-
-
-        //
-        // TODO: Code for Question 4
-        //
-        // TODO: Code for Question 5
-        //
-        // ...
 
         entities.addAll(newDrops);
     }
-
 }
