@@ -32,11 +32,21 @@ public class EntityFactory {
         return item;
     }
 
-    public static Bullet createEnemyBullet(float x, float y, int damage) {
+    // [MODIFY] Update the Module 8 createEnemyBullet method with the following changes:
+    public static Bullet createEnemyBullet(float x, float y, int damage, String spriteKey) { // Add String spriteKey as a parameter
+        String key = (spriteKey != null) ? spriteKey : "bullet_danmaku"; // Add local String variable key
+        TextureRegion sprite = AssetManager.getInstance().getTextureRegion(key); // Change "bullet_danmaku" to the key variable
         Bullet bullet = new Bullet(x, y, 0f, BulletType.DANMAKU, damage);
-        bullet.setSprite(AssetManager.getInstance().getTextureRegion("bullet_danmaku"));
+        bullet.setSprite(sprite);
         return bullet;
     }
+
+    // [ADDITION] Add the following 3-parameter overloaded method (delegating to the 4-parameter method above):
+    public static Bullet createEnemyBullet(float x, float y, int damage) {
+        return createEnemyBullet(x, y, damage, "bullet_danmaku");
+    }
+public static Bullet createPlayerBullet(float x, float y, int damage)
+}
 
     // Answer to the doc's hint: Fairy and Boss had no factory methods
     public static Fairy createFairy(float x, float y, String name, int hp) {

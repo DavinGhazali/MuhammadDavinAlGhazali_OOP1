@@ -9,16 +9,13 @@ import com.badlogic.gdx.math.Rectangle;
 import com.davin.frontend.items.Item;
 import com.davin.frontend.items.ItemType;
 import com.davin.frontend.objects.enemies.Enemy;
-import com.davin.frontend.objects.patterns.ShootingPattern;
+import com.davin.frontend.observers.GameObserver;
 import com.davin.frontend.systems.AssetManager;
 import com.davin.frontend.systems.BulletManager;
-
-import java.awt.*;
-import java.util.List;
-import com.davin.frontend.observers.GameObserver;
 import java.util.ArrayList;
+import java.util.List;
 
-public class Player extends GameObject {
+public class Player extends EntityShooter {
     private String name;
     private int hp;
     private int lives = 3;
@@ -26,14 +23,14 @@ public class Player extends GameObject {
     private int spellCards;
     private long score;
     private int currentDir = 0; // -1 = left, 0 = idle, 1 = right
-    private ShootingPattern shootingPattern;
-    private List<GameObserver> observers = new ArrayList<>();
 
     private int grazeCount = 0;
     private boolean focused = false;
     private float shootTimer = 0.1f;
     private float shootCooldown = 0.1f;
     private float invulnerableTimer = 0f;
+
+    private List<GameObserver> observers = new ArrayList<>();
 
     public Player(String name, int hp, int power, int spellCards) {
         super(280, 40, 32, 48, 0, Color.RED);
@@ -53,6 +50,50 @@ public class Player extends GameObject {
         this.score = 0;
     }
 
+    // ---- Observer pattern (Player is the Subject) ----
+
+    public void registerObserver(GameObserver observer) {
+        if (observer != null && !observers.contains(observer)) {
+            observers.add(observer);
+            observer.onScoreChanged(score);
+            observer.onHpChanged(hp);
+            observer.onLivesChanged(lives);
+            observer.onSpellCardsChanged(spellCards);
+            observer.onPowerChanged(power);
+            observer.onGrazeChanged(grazeCount);
+        }
+    }
+
+    public void removeObserver(GameObserver observer) {
+        observers.remove(observer);
+    }
+
+    private void notifyScoreChanged() {
+        for (GameObserver obs : observers) obs.onScoreChanged(score);
+    }
+
+    private void notifyHpChanged() {
+        for (GameObserver obs : observers) obs.onHpChanged(hp);
+    }
+
+    private void notifyLivesChanged() {
+        for (GameObserver obs : observers) obs.onLivesChanged(lives);
+    }
+
+    private void notifySpellCardsChanged() {
+        for (GameObserver obs : observers) obs.onSpellCardsChanged(spellCards);
+    }
+
+    private void notifyPowerChanged() {
+        for (GameObserver obs : observers) obs.onPowerChanged(power);
+    }
+
+    private void notifyGrazeChanged() {
+        for (GameObserver obs : observers) obs.onGrazeChanged(grazeCount);
+    }
+
+    // ---- Hitboxes ----
+
     @Override
     public Rectangle getCoreHitbox() {
         return new Rectangle(x + (width / 2f) - 4f, y + (height / 2f) - 4f, 8f, 8f);
@@ -63,9 +104,11 @@ public class Player extends GameObject {
         return new Rectangle(x, y, width, height);
     }
 
+    // ---- Update / movement ----
+
     @Override
     public void update(float delta) {
-        super.update(delta); // advances stateTime for animations
+        super.update(delta); // animation time + movement strategy (none for the player)
         shootTimer += delta;
 
         if (invulnerableTimer > 0f) {
@@ -134,18 +177,22 @@ public class Player extends GameObject {
         }
     }
 
+    // ---- Shooting / bomb ----
+
     public void shoot(Enemy target) {
         int damage = 10 + getPower();
         System.out.println(getName() + " shoots " + target.getName() + " dealing " + damage + " DMG!");
         target.takeDamage(damage);
     }
 
+    // Adds the fire-rate cooldown on top of the inherited strategy delegation
+    @Override
     public void shootBullet(BulletManager bulletManager) {
         if (bulletManager == null) return;
 
         if (shootTimer >= shootCooldown) {
             if (shootingPattern != null) {
-                shootingPattern.execute(x + width / 2f - 8f, y + height, bulletManager, true);
+                super.shootBullet(bulletManager); // delegates to the injected strategy
             } else {
                 bulletManager.spawnPlayerBullet(x + width / 2f - 8f, y + height, 0, 400f, 10 + power);
             }
@@ -153,22 +200,35 @@ public class Player extends GameObject {
         }
     }
 
-    public ShootingPattern getShootingPattern() { return shootingPattern; }
-    public void setShootingPattern(ShootingPattern shootingPattern) { this.shootingPattern = shootingPattern; }
-
-    // Spell Card (Bomb) executed by BombCommand
-
+    public void useBomb(BulletManager bulletManager, List<GameObject> entities) {
+        if (spellCards > 0) {
+            spellCards--;
+            notifySpellCardsChanged();
+            invulnerableTimer = 5.0f;
+            if (bulletManager != null) {
+                bulletManager.clearEnemyBullets(entities);
+            }
+            System.out.println(name + " unleashes SPELL CARD (Fantasy Seal)! All enemy bullets cleared!");
+        } else {
+            System.out.println("No Spell Cards (Bombs) remaining!");
+        }
+    }
 
     public void useBomb(BulletManager bulletManager) {
         useBomb(bulletManager, null);
     }
 
+    public void addGraze() {
+        this.grazeCount++;
+        addScore(50);
+        notifyGrazeChanged();
+    }
 
+    // ---- Rendering ----
 
     @Override
     public void render(SpriteBatch batch) {
         if (batch != null && active && !isDestroyed()) {
-            // Blink while invulnerable
             if (invulnerableTimer > 0f) {
                 boolean visible = ((int) (invulnerableTimer * 16)) % 2 == 0;
                 if (!visible) return;
@@ -184,7 +244,6 @@ public class Player extends GameObject {
         }
     }
 
-    // Draws the Core Hitbox dot while Focus Mode is active
     public void renderFocusIndicator(ShapeRenderer shapeRenderer) {
         if (focused && shapeRenderer != null && active) {
             Rectangle core = getCoreHitbox();
@@ -218,6 +277,7 @@ public class Player extends GameObject {
         if (this.hp < 0) {
             this.hp = 0;
         }
+        notifyHpChanged();
         System.out.println(name + " took " + damage + " damage! Remaining HP: " + this.hp);
         if (this.hp == 0) {
             System.out.println(name + " was defeated (Pichuun~)! ");
@@ -227,6 +287,7 @@ public class Player extends GameObject {
 
     public void loseLife(BulletManager bulletManager, List<GameObject> entities) {
         this.lives--;
+        notifyLivesChanged();
 
         if (bulletManager != null) {
             bulletManager.clearEnemyBullets();
@@ -251,7 +312,7 @@ public class Player extends GameObject {
         this.y = 50;
         this.hp = 100;
         this.invulnerableTimer = 3.0f;
-        this.power = Math.max(10, this.power - 16); // Touhou death penalty
+        this.power = Math.max(10, this.power - 16);
         this.spellCards = 3;
         notifyHpChanged();
         notifyPowerChanged();
@@ -340,58 +401,22 @@ public class Player extends GameObject {
         return invulnerableTimer;
     }
 
-    public void registerObserver(GameObserver observer) {
-        if (observer != null && !observers.contains(observer)) {
-            observers.add(observer);
-            observer.onScoreChanged(score);
-            observer.onHpChanged(hp);
-            observer.onLivesChanged(lives);
-            observer.onSpellCardsChanged(spellCards);
-            observer.onPowerChanged(power);
-            observer.onGrazeChanged(grazeCount);
-        }
-    }
-
-    public void removeObserver(GameObserver observer) {
-        observers.remove(observer);
-    }
-
-    private void notifyScoreChanged() {
-        for (GameObserver obs : observers)obs.onScoreChanged(score);
-    }
-
-    private void notifyHpChanged() {
-        for (GameObserver obs : observers)obs.onHpChanged(hp);
-    }
-
-    private void notifyLivesChanged() {
-        for (GameObserver obs : observers)obs.onLivesChanged(lives);
-    }
-
-    private void notifySpellCardsChanged() {
-        for (GameObserver obs : observers)obs.onSpellCardsChanged(spellCards);
-    }
-
-    private void notifyPowerChanged() {
-        for (GameObserver obs : observers)obs.onPowerChanged(power);
-    }
-
-    private void notifyGrazeChanged() {
-        for (GameObserver obs : observers)obs.onGrazeChanged(grazeCount);
-    }
-
-
+    // ---- Getters / setters ----
 
     public int getLives() { return lives; }
-    public void setLives(int lives) { this.lives = lives; }
+    public void setLives(int lives) { this.lives = lives; notifyLivesChanged(); }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
     public int getHp() { return hp; }
-    public void setHp(int hp) { this.hp = Math.max(0, hp); }
+    public void setHp(int hp) { this.hp = Math.max(0, hp); notifyHpChanged(); }
+
     public int getPower() { return power; }
-    public void setPower(int power) { this.power = power; }
+    public void setPower(int power) { this.power = power; notifyPowerChanged(); }
+
     public int getSpellCards() { return spellCards; }
-    public void setSpellCards(int spellCards) { this.spellCards = spellCards; }
+    public void setSpellCards(int spellCards) { this.spellCards = spellCards; notifySpellCardsChanged(); }
+
     public long getScore() { return score; }
 }

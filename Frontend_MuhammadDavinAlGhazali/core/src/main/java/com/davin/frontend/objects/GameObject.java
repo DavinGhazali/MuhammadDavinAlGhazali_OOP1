@@ -92,4 +92,17 @@ public abstract class GameObject implements Collidable {
     public void setSprite(TextureRegion sprite) { this.sprite = sprite; }
     public Animation<TextureRegion> getAnimation() { return animation; }
     public void setAnimation(Animation<TextureRegion> animation) { this.animation = animation; }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public float getStateTime() {
+        return stateTime;
+    }
+
+    public void setStateTime(float stateTime){
+        this.stateTime = stateTime;
+    }
+
 }

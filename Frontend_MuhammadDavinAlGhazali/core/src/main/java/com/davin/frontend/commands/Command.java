@@ -1,26 +1,25 @@
 package com.davin.frontend.commands;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.davin.frontend.objects.GameObject;
 import java.util.ArrayList;
 import java.util.List;
-import com.badlogic.gdx.Gdx;
 
 public class InputHandler {
 
-    // 1. Key configuration
+    // Key configuration
     private int keyShoot = Input.Keys.Z;
     private int keyBomb = Input.Keys.X;
     private int keyFocus = Input.Keys.SHIFT_LEFT;
 
-    // 2. Pre-allocated command slots (Zero-GC invoker)
+    // Pre-allocated command slots
     private ShootCommand shootCommand = new ShootCommand();
     private BombCommand bombCommand = new BombCommand();
     private FocusCommand focusOn = new FocusCommand(true);
     private FocusCommand focusOff = new FocusCommand(false);
     private final MoveCommand moveCommand = new MoveCommand(0, 0);
 
-    // 3. Buffer for the commands generated each frame (used in CS)
     private final List<Command> activeCommands = new ArrayList<>();
 
     public InputHandler() {}
@@ -33,7 +32,6 @@ public class InputHandler {
         this.bombCommand.setEntities(entities);
     }
 
-    // 4. Getters and setters for key rebinding
     public int getKeyShoot() { return keyShoot; }
     public void setKeyShoot(int keyShoot) { this.keyShoot = keyShoot; }
 
@@ -43,53 +41,36 @@ public class InputHandler {
     public int getKeyFocus() { return keyFocus; }
     public void setKeyFocus(int keyFocus) { this.keyFocus = keyFocus; }
 
-    public class InputHandler {
+    public List<Command> handleInput(float delta) {
+        activeCommands.clear();
+        if (Gdx.input == null) return activeCommands;
 
-        // ... key configuration fields and command slots from Pre-CS ...
+        // 1. Focus mode
+        boolean isFocusHeld = Gdx.input.isKeyPressed(keyFocus) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+        activeCommands.add(isFocusHeld ? focusOn : focusOff);
 
-        public List<Command> handleInput(float delta) {
-            activeCommands.clear();
-            if (Gdx.input == null) return activeCommands;
+        // 2. 8-directional movement
+        float dx = 0;
+        float dy = 0;
+        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) dy += 1;
+        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) dy -= 1;
+        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) dx -= 1;
+        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) dx += 1;
 
-            boolean isFocusHeld = Gdx.input.isKeyPressed(keyFocus) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
-            activeCommands.add(isFocusHeld ? focusOn : focusOff);
+        float speedMult = isFocusHeld ? 0.45f : 1.0f;
+        moveCommand.set(dx * delta * speedMult, dy * delta * speedMult);
+        activeCommands.add(moveCommand);
 
-
-            // 1. Focus Mode Toggle (Left or Right Shift) (3 points)
-            // TODO:
-            // - Check whether keyFocus or SHIFT_RIGHT is currently pressed (isKeyPressed).
-            // - Store the result in a boolean variable `isFocusHeld`.
-            // - Add to activeCommands: if isFocusHeld then focusOn, otherwise focusOff.
-
-            // 2. 8-Directional Movement (WASD or Arrow Keys) (5 points)
-            float dx = 0;
-            float dy = 0;
-
-            if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) dy += 1;
-            if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) dy -= 1;
-            if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) dy -= 1;
-            if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) dy += 1;
-            // TODO:
-
-            float speedMult = isFocusHeld ? 0.45f : 1.0f;
-            moveCommand.set(dx * delta * speedMult, dy * delta * speedMult);
-            activeCommands.add(moveCommand);
-
-            if (Gdx.input.isKeyPressed(keyShoot)) {
-                activeCommands.add(shootCommand);
-            }
-
-            if (Gdx.input.isKeyPressed(keyBomb)) {
-                activeCommands.add(bombCommand);
-            }
-
-            return activeCommands;
+        // 3. Shoot (hold)
+        if (Gdx.input.isKeyPressed(keyShoot)) {
+            activeCommands.add(shootCommand);
         }
-            // - If W or UP is pressed (isKeyPressed), increase dy by 1
-            // - If S or DOWN is pressed (isKeyPressed), decrease dy by 1
-            // - If A or LEFT is pressed (isKeyPressed), decrease dx by 1
-            // - If D or RIGHT is pressed (isKeyPressed), increase dx by 1
-            // - Calculate float speedMult = isFocusHeld ? 0.45f : 1.0f;
-            // - Update displacement: moveCommand.set(dx * delta * speedMult, dy * delta * speedMult);
-            // - Add moveCommand to activeCommands.
 
+        // 4. Bomb (single press)
+        if (Gdx.input.isKeyJustPressed(keyBomb)) {
+            activeCommands.add(bombCommand);
+        }
+
+        return activeCommands;
+    }
+}

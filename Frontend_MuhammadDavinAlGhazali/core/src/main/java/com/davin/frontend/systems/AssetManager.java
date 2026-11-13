@@ -14,8 +14,6 @@ public class AssetManager {
     private Map<String, Animation<TextureRegion>> animationMap;
     private Map<String, Texture> textureMap;
 
-    // Private so nobody can call "new AssetManager()". This guarantees only one
-    // instance exists (Singleton), so all caches are shared.
     private AssetManager() {
         textureRegionMap = new HashMap<>();
         animationMap = new HashMap<>();
@@ -107,18 +105,36 @@ public class AssetManager {
     }
 
     public void init() {
-        // Animated sheets: player, rumia (boss), fairy. Static sheets: items, bullets.
-        // Frame counts / durations are my picks, tweak to taste.
-        registerAnimationFromSheet("player_idle", "player.png", 32, 48, 0, 4, 0.12f, Animation.PlayMode.LOOP);
-        registerAnimationFromSheet("boss_idle", "rumia.png", 64, 64, 0, 4, 0.15f);
-        registerAnimationFromSheet("fairy_idle", "fairy.png", 32, 32, 0, 4, 0.12f);
+        // ---- Animations ----
+        registerAnimationFromSheet("player_idle", "player.png", 32, 48, 0, 0, 8, 0.125f, Animation.PlayMode.LOOP);
+        registerAnimationFromSheet("player_left", "player.png", 32, 48, 1, 0, 4, 0.12f, Animation.PlayMode.LOOP);
+        registerAnimationFromSheet("player_right", "player.png", 32, 48, 2, 0, 4, 0.12f, Animation.PlayMode.LOOP);
 
+        registerAnimationFromSheet("boss_idle", "rumia.png", 64, 64, 0, 0, 4, 0.2f, Animation.PlayMode.LOOP);
+        registerAnimationFromSheet("boss_left", "rumia.png", 64, 64, 1, 0, 4, 0.15f, Animation.PlayMode.REVERSED);
+        registerAnimationFromSheet("boss_right", "rumia.png", 64, 64, 2, 0, 4, 0.15f, Animation.PlayMode.NORMAL);
+        registerAnimationFromSheet("boss_left_loop", "rumia.png", 64, 64, 1, 0, 4, 0.15f, Animation.PlayMode.LOOP);
+        registerAnimationFromSheet("boss_right_loop", "rumia.png", 64, 64, 2, 0, 4, 0.15f, Animation.PlayMode.LOOP);
+
+        registerAnimationFromSheet("fairy_idle_red", "fairy.png", 32, 32, 1, 0, 8, 0.125f, Animation.PlayMode.LOOP);
+        registerAnimationFromSheet("fairy_idle_blue", "fairy.png", 32, 32, 0, 0, 8, 0.125f, Animation.PlayMode.LOOP);
+
+        // ---- Static regions ----
+        registerRegionFromSheet("bullet_amulet", "amulet_reimu.png", 16, 16, 0, 0);
+        registerRegionFromSheet("bullet_amulet_homing", "amulet_reimu.png", 16, 16, 1, 0);
+
+        // Danmaku bullet color variants (bullets_small.png, 16x16 per tile)
         registerRegionFromSheet("bullet_danmaku", "bullets_small.png", 16, 16, 2, 3);
+        registerRegionFromSheet("bullet_danmaku_blue", "bullets_small.png", 16, 16, 2, 3);
+        registerRegionFromSheet("bullet_danmaku_red", "bullets_small.png", 16, 16, 2, 6);
+        registerRegionFromSheet("bullet_danmaku_purple", "bullets_small.png", 16, 16, 2, 4);
+        registerRegionFromSheet("bullet_danmaku_orange", "bullets_small.png", 16, 16, 2, 15);
+        registerRegionFromSheet("bullet_danmaku_green", "bullets_small.png", 16, 16, 2, 10);
 
         registerRegionFromSheet("item_power", "items.png", 16, 16, 0, 0);
         registerRegionFromSheet("item_point", "items.png", 16, 16, 0, 1);
-        registerRegionFromSheet("item_bomb", "items.png", 16, 16, 0, 2);
-        registerRegionFromSheet("item_life", "items.png", 16, 16, 0, 3);
+        registerRegionFromSheet("item_bomb", "items.png", 16, 16, 0, 3);
+        registerRegionFromSheet("item_life", "items.png", 16, 16, 0, 5);
     }
 
     public void dispose() {

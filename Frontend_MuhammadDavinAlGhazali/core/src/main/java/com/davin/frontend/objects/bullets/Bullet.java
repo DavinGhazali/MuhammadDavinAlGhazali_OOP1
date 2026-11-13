@@ -6,6 +6,7 @@ import com.davin.frontend.objects.BulletType;
 import com.davin.frontend.objects.Collidable;
 import com.davin.frontend.objects.GameObject;
 import com.davin.frontend.objects.enemies.Enemy;
+import com.davin.frontend.objects.bullets.patterns.bulletStrategy.BulletMovementPattern;
 
 public class Bullet extends GameObject {
     private BulletType bulletType;
@@ -16,6 +17,8 @@ public class Bullet extends GameObject {
     private float angle = 90f;
     private boolean isPlayerBullet;
     private boolean grazed;
+
+    private BulletMovementPattern movementPattern;
 
     public Bullet(float x, float y, BulletType bulletType, int damage) {
         super(x, y, 16, 16, 400f, Color.YELLOW);
@@ -53,13 +56,18 @@ public class Bullet extends GameObject {
         this.active = true;
         this.stateTime = 0f;
         this.grazed = false;
+        this.movementPattern = null; // recycled bullets must not keep an old strategy
     }
 
     @Override
     public void update(float delta) {
         super.update(delta);
-        x += vx * delta;
-        y += vy * delta;
+        if (movementPattern != null) {
+            movementPattern.move(this, delta);
+        } else {
+            x += vx * delta;
+            y += vy * delta;
+        }
     }
 
     @Override
@@ -95,4 +103,7 @@ public class Bullet extends GameObject {
 
     public boolean hasBeenGrazed() { return grazed; }
     public void setGrazed(boolean grazed) { this.grazed = grazed; }
+
+    public BulletMovementPattern getMovementPattern() { return movementPattern; }
+    public void setMovementPattern(BulletMovementPattern movementPattern) { this.movementPattern = movementPattern; }
 }

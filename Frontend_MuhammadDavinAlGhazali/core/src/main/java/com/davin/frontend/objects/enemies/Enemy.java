@@ -1,10 +1,12 @@
 package com.davin.frontend.objects.enemies;
 
 import com.badlogic.gdx.graphics.Color;
-import com.davin.frontend.objects.GameObject;
+import com.davin.frontend.objects.EntityShooter;
 import com.davin.frontend.objects.Player;
+import com.davin.frontend.objects.patterns.ShootingPattern;
+import com.davin.frontend.objects.bullets.patterns.entityStrategy.EntityMovementPattern;
 
-public class Enemy extends GameObject {
+public class Enemy extends EntityShooter {
     protected String name;
     protected int hp;
     protected int maxHp;
@@ -27,9 +29,19 @@ public class Enemy extends GameObject {
         this.scoreValue = scoreValue;
     }
 
+    // Constructor Injection: strategies are passed in from outside
+    public Enemy(float x, float y, float width, float height, Color color, String name, int hp, long scoreValue,
+                 ShootingPattern shootingPattern, EntityMovementPattern movementPattern) {
+        super(x, y, width, height, 0, color, shootingPattern, movementPattern);
+        this.name = name;
+        this.hp = hp;
+        this.maxHp = hp;
+        this.scoreValue = scoreValue;
+    }
+
     @Override
     public void update(float delta) {
-        super.update(delta);
+        super.update(delta); // animation time + movement strategy
         if (collisionCooldown > 0) {
             collisionCooldown -= delta;
         }
