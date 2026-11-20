@@ -1,4 +1,4 @@
-package com.davin.frontend.items;
+package com.davin.frontend.objects.items;
 
 public enum ItemType {
     POWER(100L, 1),

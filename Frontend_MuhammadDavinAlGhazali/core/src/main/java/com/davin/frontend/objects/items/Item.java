@@ -1,4 +1,4 @@
-package com.davin.frontend.items;
+package com.davin.frontend.objects.items;
 
 import com.badlogic.gdx.graphics.Color;
 import com.davin.frontend.objects.Collidable;

@@ -1,4 +1,4 @@
-package com.davin.frontend.objects.bullets.patterns.bulletStrategy;
+package com.davin.frontend.objects.patterns.bulletStrategy;
 
 import com.davin.frontend.objects.bullets.Bullet;
 

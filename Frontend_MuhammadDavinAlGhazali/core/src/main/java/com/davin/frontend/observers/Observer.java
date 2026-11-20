@@ -7,6 +7,4 @@ public interface GameObserver {
     void onPowerChanged(int currentPower);
     void onGrazeChanged(int currentGraze);
     default void onLivesChanged(int currentLives) {}
-
-    void onLi(long score);
 }

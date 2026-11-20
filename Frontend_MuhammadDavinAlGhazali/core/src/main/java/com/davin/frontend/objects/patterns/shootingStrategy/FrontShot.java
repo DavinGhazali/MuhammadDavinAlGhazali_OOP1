@@ -1,4 +1,3 @@
-// RingShot.java
 package com.davin.frontend.objects.patterns.shootingStrategy;
 
 import com.davin.frontend.objects.bullets.Bullet;
@@ -6,42 +5,44 @@ import com.davin.frontend.objects.patterns.ShootingPattern;
 import com.davin.frontend.objects.patterns.bulletStrategy.BulletMovementPattern;
 import com.davin.frontend.systems.BulletManager;
 
-public class RingShot implements ShootingPattern {
+public class FrontShot implements ShootingPattern {
     private float bulletSpeed;
-    private int bulletCount;
     private int damage;
     private BulletMovementPattern bulletMovementPattern;
 
-    public RingShot(float bulletSpeed, int bulletCount, int damage, BulletMovementPattern bulletMovementPattern) {
+    public FrontShot(float bulletSpeed, int damage, BulletMovementPattern bulletMovementPattern) {
         this.bulletSpeed = bulletSpeed;
-        this.bulletCount = Math.max(3, bulletCount);
         this.damage = damage;
         this.bulletMovementPattern = bulletMovementPattern;
     }
 
-    public RingShot(float bulletSpeed, int bulletCount, int damage) {
-        this(bulletSpeed, bulletCount, damage, null);
+    public FrontShot(float bulletSpeed, int damage) {
+        this(bulletSpeed, damage, null);
     }
 
     @Override
     public void execute(float originX, float originY, BulletManager bulletManager, boolean isPlayer) {
         if (bulletManager == null) return;
-        float angleStep = 360f / bulletCount;
-        for (int i = 0; i < bulletCount; i++) {
-            float rad = (float) Math.toRadians(i * angleStep);
-            float vx = (float) (Math.cos(rad) * bulletSpeed);
-            float vy = (float) (Math.sin(rad) * bulletSpeed);
-            Bullet bullet = isPlayer
-                ? bulletManager.spawnPlayerBullet(originX, originY, vx, vy, damage)
-                : bulletManager.spawnEnemyBullet(originX, originY, vx, vy, damage);
-            if (bullet != null && bulletMovementPattern != null) bullet.setMovementPattern(bulletMovementPattern);
+
+        float angleDeg = isPlayer ? 90.0f : 270.0f;
+        float rad = (float) Math.toRadians(angleDeg);
+        float vx = (float) (bulletSpeed * Math.cos(rad));
+        float vy = (float) (bulletSpeed * Math.sin(rad));
+
+        Bullet bullet;
+        if (isPlayer) {
+            bullet = bulletManager.spawnPlayerBullet(originX, originY, vx, vy, damage);
+        } else {
+            bullet = bulletManager.spawnEnemyBullet(originX, originY, vx, vy, damage);
+        }
+
+        if (bullet != null && bulletMovementPattern != null) {
+            bullet.setMovementPattern(bulletMovementPattern);
         }
     }
 
     public float getBulletSpeed() { return bulletSpeed; }
     public void setBulletSpeed(float bulletSpeed) { this.bulletSpeed = bulletSpeed; }
-    public int getBulletCount() { return bulletCount; }
-    public void setBulletCount(int bulletCount) { this.bulletCount = bulletCount; }
     public int getDamage() { return damage; }
     public void setDamage(int damage) { this.damage = damage; }
     public BulletMovementPattern getBulletMovementPattern() { return bulletMovementPattern; }

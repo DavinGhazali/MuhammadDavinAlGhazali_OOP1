@@ -1,7 +1,7 @@
 package com.davin.frontend.systems;
 
-import com.davin.frontend.items.Item;
-import com.davin.frontend.items.ItemType;
+import com.davin.frontend.objects.items.Item;
+import com.davin.frontend.objects.items.ItemType;
 import com.davin.frontend.objects.GameObject;
 import com.davin.frontend.objects.Player;
 import com.davin.frontend.objects.bullets.Bullet;
@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CollisionReferee {
+    private int defeatCounter = 0;
+    private int itemDropCount = 0;
 
     public void resolveCollisions(Player player, List<GameObject> entities, BulletManager bulletManager) {
         if (player == null || entities == null || bulletManager == null) return;
@@ -23,12 +25,24 @@ public class CollisionReferee {
             for (GameObject entity : entities) {
                 if (entity instanceof Enemy && !entity.isDestroyed()) {
                     Enemy enemy = (Enemy) entity;
-                    if (bullet.getCoreHitbox().overlaps(enemy.getCoreHitbox())) {
-                        boolean defeated = enemy.takeDamage(bullet.getDamage());
-                        if (defeated) {
-                            player.addScore(enemy.getScoreValue());
-                            Item drop = EntityFactory.createItem(enemy.getX(), enemy.getY(), ItemType.POWER);
-                            newDrops.add(drop);
+                    if (bullet.getShotHitbox().overlaps(enemy.getShotHitbox())) {
+                        if (enemy.isDamageable()) {
+                            boolean defeated = enemy.takeDamage(bullet.getDamage());
+                            if (defeated) {
+                                player.addScore(enemy.getScoreValue());
+                                ItemType dropType = null;
+                                if (enemy.getItemDrop() != null) {
+                                    dropType = enemy.getItemDrop();
+                                } else if (defeatCounter++ % 3 == 0) {
+                                    dropType = (itemDropCount++ % 2 == 0) ? ItemType.POWER : ItemType.POINT;
+                                }
+                                if (dropType != null) {
+                                    Item drop = EntityFactory.createItem(enemy.getX(), enemy.getY(), dropType);
+                                    newDrops.add(drop);
+                                    System.out.println("[CollisionReferee] Defeated " + enemy.getName() + "! Dropped " + dropType
+                                        + " item at (" + enemy.getX() + ", " + enemy.getY() + ")");
+                                }
+                            }
                         }
                         bullet.destroy();
                         break;
@@ -42,7 +56,6 @@ public class CollisionReferee {
             if (bullet.isDestroyed()) continue;
 
             if (!player.isDestroyed()) {
-                // Priority A: core hitbox (damage / life loss)
                 if (bullet.getCoreHitbox().overlaps(player.getCoreHitbox())) {
                     if (!player.isInvulnerable()) {
                         System.out.println("[CollisionReferee] CORE HIT! Enemy Bullet hit " + player.getName() + " for " + bullet.getDamage() + " DMG!");
@@ -51,9 +64,7 @@ public class CollisionReferee {
                         // takeDamage clears the enemy bullet list, so stop looping right away
                         break;
                     }
-                }
-                // Priority B: graze hitbox
-                else if (!bullet.hasBeenGrazed()
+                } else if (!bullet.hasBeenGrazed()
                     && bullet.getCoreHitbox().overlaps(player.getGrazeHitbox())) {
                     bullet.setGrazed(true);
                     player.addGraze();
@@ -72,7 +83,7 @@ public class CollisionReferee {
                     || item.getCoreHitbox().overlaps(player.getGrazeHitbox())) {
                     player.collectItem(item);
                 }
-            } else if (entity instanceof Enemy) {
+            } else if (entity instanceof Enemy && ((Enemy) entity).isCollidable()) {
                 Enemy enemy = (Enemy) entity;
                 if (player.getCoreHitbox().overlaps(enemy.getCoreHitbox())) {
                     if (!player.isInvulnerable()) {

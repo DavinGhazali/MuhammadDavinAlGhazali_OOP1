@@ -2,7 +2,7 @@ package com.davin.frontend.objects;
 
 import com.badlogic.gdx.graphics.Color;
 import com.davin.frontend.objects.patterns.ShootingPattern;
-import com.davin.frontend.objects.bullets.patterns.entityStrategy.EntityMovementPattern;
+import com.davin.frontend.objects.patterns.entityStrategy.EntityMovementPattern;
 import com.davin.frontend.systems.BulletManager;
 
 public abstract class EntityShooter extends GameObject {

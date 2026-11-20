@@ -1,4 +1,4 @@
-package com.davin.frontend.objects.bullets.patterns.entityStrategy;
+package com.davin.frontend.objects.patterns.entityStrategy;
 
 import com.davin.frontend.objects.GameObject;
 

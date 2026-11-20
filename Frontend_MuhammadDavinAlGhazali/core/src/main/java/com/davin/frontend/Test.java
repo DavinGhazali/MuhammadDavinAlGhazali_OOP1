@@ -4,7 +4,7 @@ import com.davin.frontend.objects.Player;
 import com.davin.frontend.objects.enemies.Enemy;
 import com.davin.frontend.objects.enemies.Fairy;
 import com.davin.frontend.objects.enemies.Boss;
-import com.davin.frontend.items.Item;
+import com.davin.frontend.objects.items.Item;
 
 public class Test {
     public static void main(String[] args) {

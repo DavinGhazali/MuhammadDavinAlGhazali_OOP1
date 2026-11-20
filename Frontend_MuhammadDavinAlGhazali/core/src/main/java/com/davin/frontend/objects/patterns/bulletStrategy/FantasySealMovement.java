@@ -3,7 +3,6 @@ package com.davin.frontend.objects.patterns.bulletStrategy;
 import com.davin.frontend.objects.GameObject;
 import com.davin.frontend.objects.bullets.Bullet;
 import com.davin.frontend.objects.enemies.Enemy;
-
 import java.util.List;
 
 public class FantasySealMovement implements BulletMovementPattern {
@@ -11,8 +10,7 @@ public class FantasySealMovement implements BulletMovementPattern {
     private List<GameObject> entities;
     private float homingSpeed;
     private float turnSpeed;
-    private float driftDuration; // Phase 1 drift time before homing (default 0.4 seconds)
-    private float timer = 0f;
+    private float driftDuration;
 
     public FantasySealMovement(GameObject target, List<GameObject> entities, float homingSpeed, float turnSpeed, float driftDuration) {
         this.target = target;
@@ -33,26 +31,24 @@ public class FantasySealMovement implements BulletMovementPattern {
     @Override
     public void move(Bullet bullet, float delta) {
         if (bullet == null) return;
-        timer += delta;
 
-        if (timer < driftDuration) {
-            // Phase 1 (TH06 Radial Drift): Bullet moves along its initial radial velocity vector (vx, vy)
+        // Uses each bullet's own stateTime, so one instance is safe to share across all 8 orbs
+        if (bullet.getStateTime() < driftDuration) {
             bullet.setX(bullet.getX() + bullet.getVx() * delta);
             bullet.setY(bullet.getY() + bullet.getVy() * delta);
         } else {
-            // Dynamic Retargeting: If target is null or destroyed, find nearest active enemy from entities list!
             if (target == null || target.isDestroyed()) {
                 if (entities != null) {
                     GameObject nearest = null;
                     float minDistanceSq = Float.MAX_VALUE;
                     for (GameObject obj : entities) {
-                        if (obj instanceof Enemy enemy && !enemy.isDestroyed()) {
-                            float dx = enemy.getX() - bullet.getX();
-                            float dy = enemy.getY() - bullet.getY();
+                        if (obj instanceof Enemy && !obj.isDestroyed()) {
+                            float dx = obj.getX() - bullet.getX();
+                            float dy = obj.getY() - bullet.getY();
                             float distSq = dx * dx + dy * dy;
                             if (distSq < minDistanceSq) {
                                 minDistanceSq = distSq;
-                                nearest = enemy;
+                                nearest = obj;
                             }
                         }
                     }
@@ -60,7 +56,6 @@ public class FantasySealMovement implements BulletMovementPattern {
                 }
             }
 
-            // Phase 2 (TH06 Homing Lock): Bullet steers towards target and accelerates
             if (target != null && !target.isDestroyed()) {
                 float targetAngle = (float) Math.toDegrees(Math.atan2(
                     target.getY() - bullet.getY(),

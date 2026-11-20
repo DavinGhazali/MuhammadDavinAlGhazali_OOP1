@@ -2,13 +2,16 @@ package com.davin.frontend.objects.bullets;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Rectangle;
 import com.davin.frontend.objects.BulletType;
 import com.davin.frontend.objects.Collidable;
 import com.davin.frontend.objects.GameObject;
 import com.davin.frontend.objects.enemies.Enemy;
-import com.davin.frontend.objects.bullets.patterns.bulletStrategy.BulletMovementPattern;
+import com.davin.frontend.objects.patterns.bulletStrategy.BulletMovementPattern;
 
 public class Bullet extends GameObject {
+    private static final float PLAYER_SHOT_HITBOX = 12f;
+
     private BulletType bulletType;
     private int damage;
 
@@ -89,6 +92,15 @@ public class Bullet extends GameObject {
             enemy.takeDamage(damage);
             destroy();
         }
+    }
+
+    // Player shots use a 12x12 hitbox centered on the sprite; enemy bullets keep the core hitbox
+    public Rectangle getShotHitbox() {
+        if (!isPlayerBullet) {
+            return getCoreHitbox();
+        }
+        return new Rectangle(x + (width - PLAYER_SHOT_HITBOX) / 2f, y + (height - PLAYER_SHOT_HITBOX) / 2f,
+            PLAYER_SHOT_HITBOX, PLAYER_SHOT_HITBOX);
     }
 
     public BulletType getBulletType() { return bulletType; }
